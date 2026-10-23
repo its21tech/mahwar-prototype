@@ -58,13 +58,6 @@ The dashboard does not connect to live traffic feeds, public-safety systems, or 
 
 The Arduino component forms part of the project prototype. The specific hardware functionality depends on the implemented demonstration. Mahwar is not a production-ready traffic-management or emergency-dispatch system.
 
-## How to Run the Web Prototype
-
-1. Clone or download this repository.
-2. Open `index.html` in a modern web browser.
-3. Ensure an internet connection is available for the map library and map tiles.
-
-These instructions apply to the web interface. Running the Arduino component may require the corresponding hardware, source code, and setup instructions.
 
 ## Project Context
 
