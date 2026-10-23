@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>محور // منصة المحاكاة الذكية لإدارة الطوارئ</title>
+    <style>
+        :root {
+            --bg-dark: #0b0f19;
+            --panel-bg: rgba(17, 24, 39, 0.85);
+            --panel-border: rgba(51, 65, 85, 0.4);
+            --accent-green: #10b981;
+            --accent-red: #f43f5e;
+            --accent-blue: #3b82f6;
+            --accent-orange: #f59e0b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(to bottom, #111827, #0b0f19);
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(51, 65, 85, 0.3);
+            z-index: 10;
+        }
+
+        .logo-area h1 {
+            font-size: 24px;
+            font-weight: 900;
+            letter-spacing: 0.5px;
+            color: var(--accent-green);
+            text-shadow: 0 0 15px rgba(16, 185, 129, 0.3);
+        }
+
+        .logo-area span {
+            color: var(--text-main);
+            font-weight: 300;
+            font-size: 16px;
+        }
+
+        #start-btn {
+            background: linear-gradient(135deg, var(--accent-green), #059669);
+            color: #030712;
+            border: none;
+            padding: 10px 24px;
+            font-size: 15px;
+            font-weight: 700;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 20px rgba(16, 185, 129, 0.3);
+        }
+
+        #start-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 24px rgba(16, 185, 129, 0.5);
+        }
+
+        #start-btn:disabled {
+            background: #334155;
+            color: #64748b;
+            cursor: not-allowed;
+            box-shadow: none;
+            transform: none;
+        }
+
+        .main-container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* القائمة الجانبية لوحة التحكم */
+        .sidebar {
+            width: 380px;
+            background-color: rgba(11, 15, 25, 0.85);
+            backdrop-filter: blur(20px);
+            border-left: 1px solid rgba(51, 65, 85, 0.3);
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            gap: 15px;
+            overflow-y: auto;
+            z-index: 5;
+        }
+
+        .map-container {
+            flex: 1;
+            position: relative;
+            background-color: #0d1321;
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .panel {
+            background-color: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 12px;
+            padding: 16px;
+            transition: all 0.4s ease;
+        }
+
+        .panel-title {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--accent-blue);
+            margin-bottom: 10px;
+            font-weight: 700;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding-bottom: 5px;
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        
+        .stat-val {
+            font-weight: 600;
+            color: #f1f5f9;
+        }
+
+        .alert-active {
+            border-color: var(--accent-red);
+            background: linear-gradient(135deg, rgba(244, 63, 94, 0.12), rgba(17, 24, 39, 0.85));
+            box-shadow: 0 0 20px rgba(244, 63, 94, 0.1);
+        }
+
+        /* دليل مفتاح الخريطة المضاف حديثاً */
+        .map-legend {
+            position: absolute;
+            top: 25px;
+            right: 25px;
+            background: rgba(11, 15, 25, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 14px;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+            z-index: 150;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #e2e8f0;
+        }
+
+        .legend-color {
+            width: 14px;
+            height: 100%;
+            min-height: 14px;
+            border-radius: 3px;
+        }
+
+        /* الجدول الزمني للمحاكاة */
+        .timeline {
+            position: absolute;
+            bottom: 25px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(17, 24, 39, 0.9);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 8px 16px;
+            border-radius: 40px;
+            display: flex;
+            gap: 4px;
+            align-items: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+            z-index: 100;
+        }
+
+        .timeline-step {
+            font-size: 11px;
+            color: #475569;
+            font-weight: 700;
+            padding: 6px 12px;
+            border-radius: 20px;
+            white-space: nowrap;
+            transition: all 0.4s;
+        }
+
+        .timeline-step.active {
+            background-color: var(--accent-blue);
+            color: #fff;
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.4);
+        }
+
+        .timeline-step.completed {
+            color: var(--accent-green);
+        }
+
+        .spinner {
+            border: 2px solid rgba(255,255,255,0.05);
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border-left-color: var(--accent-blue);
+            animation: spin 0.8s linear infinite;
+            margin: 10px auto;
+        }
+
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        .toast-notification {
+            position: absolute;
+            top: 25px;
+            left: 25px;
+            background: linear-gradient(135deg, var(--accent-red), #be123c);
+            color: white;
+            padding: 14px 24px;
+            border-radius: 8px;
+            font-weight: 800;
+            box-shadow: 0 15px 30px rgba(244, 63, 94, 0.3);
+            display: none;
+            z-index: 200;
+            animation: slideIn 0.4s ease forwards;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo-area">
+            <h1>مِـحْـوَر <span>// نظام إدارة الحركة والطوارئ الذكي</span></h1>
+        </div>
+        <div>
+            <button id="start-btn" onclick="startSimulation()">بدء المحاكاة التفاعلية</button>
+        </div>
+    </header>
+
+    <div class="main-container">
+        <div class="map-container">
+            <div class="map-legend">
+                <div class="legend-item"><div class="legend-color" style="background: #64748b;"></div>سيارة مدنية (طبيعي)</div>
+                <div class="legend-item"><div class="legend-color" style="background: var(--accent-red);"></div>مركبة متضررة (الحادث)</div>
+                <div class="legend-item"><div class="legend-color" style="background: #06b6d4;"></div>🚑 سيارة إسعاف محور</div>
+                <div class="legend-item"><div class="legend-color" style="background: #3b82f6;"></div>🚓 دورية الأمن الذكي</div>
+                <div class="legend-item"><div class="legend-color" style="background: #ef4444;"></div>🚒 آليات الدفاع المدني</div>
+                <div class="legend-item"><div class="legend-color" style="background: #c084fc; border: 1px solid var(--accent-red);"></div>⚠️ مركبة تسير عكس السير</div>
+                <div class="legend-item"><div class="legend-color" style="background: #1e293b; border: 1px solid #334155;"></div>مبنى سكني / تجاري</div>
+                <div class="legend-item"><div class="legend-color" style="background: #064e3b;"></div>مساحة خضراء / حديقة</div>
+            </div>
+
+            <div id="toast" class="toast-notification">🚨 رصد حالة طوارئ محتملة</div>
+            <canvas id="cityMap"></canvas>
+
+            <div class="timeline">
+                <div class="timeline-step" id="step-0">طبيعي</div>
+                <div class="timeline-step" id="step-1">الحادث</div>
+                <div class="timeline-step" id="step-2">التحليل</div>
+                <div class="timeline-step" id="step-3">الاستجابة</div>
+                <div class="timeline-step" id="step-4">الممر الأخضر</div>
+                <div class="timeline-step" id="step-5">التحويل الذكي</div>
+                <div class="timeline-step" id="step-6">التحذير العام</div>
+                <div class="timeline-step" id="step-7">الأمن الذكي</div>
+                <div class="timeline-step" id="step-8">المستشفى</div>
+                <div class="timeline-step" id="step-9">الملخص</div>
+            </div>
+        </div>
+
+        <div class="sidebar">
+            <div class="panel" id="panel-status">
+                <div class="panel-title" style="color:var(--accent-green)">مؤشرات الشبكة الحية</div>
+                <div class="stat-row"><span>حالة المرور العام:</span><span id="stat-traffic" class="stat-val" style="color: var(--accent-green);">مستقر</span></div>
+                <div class="stat-row"><span>معدل سرعة التدفق:</span><span id="stat-speed" class="stat-val">54 كم/س</span></div>
+                <div class="stat-row"><span>حالة نظام الذكاء الاصطناعي:</span><span id="stat-ai" class="stat-val" style="color: var(--accent-green);">مستقر</span></div>
+            </div>
+
+            <div class="panel" id="panel-incident">
+                <div class="panel-title">إدارة بلاغات الطوارئ</div>
+                <div id="incident-content" style="color: var(--text-muted); font-size: 13px;">
+                    يتم مراقبة الشرايين الحيوية والتقاطعات... النظام يعمل بشكل اعتيادي.
+                </div>
+            </div>
+
+            <div class="panel" id="panel-ai">
+                <div class="panel-title">تحليلات الذكاء الاصطناعي التنبؤية</div>
+                <div id="ai-content" style="color: var(--text-muted); font-size: 13px;">
+                    في انتظار رصد متغيرات في الشبكة...
+                </div>
+            </div>
+
+            <div class="panel" id="panel-corridor">
+                <div class="panel-title">منظومة الممرات الديناميكية</div>
+                <div id="corridor-content" style="color: var(--text-muted); font-size: 13px;">
+                    إشارات المرور تعمل وفق الجدولة الزمنية المحلية المستقرة.
+                </div>
+            </div>
+
+            <div class="panel" id="panel-security">
+                <div class="panel-title">الأمن السيبراني وإنفاذ القانون</div>
+                <div id="security-content" style="color: var(--text-muted); font-size: 13px;">
+                    لم يتم رصد أي سلوكيات قيادة شاذة أو تهديدات.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('cityMap');
+        const ctx = canvas.getContext('2d');
+
+        function resizeCanvas() {
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = canvas.parentElement.clientHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        let currentStep = 0;
+        let simTime = 0;
+        let isRunning = false;
+        let cars = [];
+        let emergencyVehicles = [];
+        let buildings = [];
+        let corridorActive = false;
+        let rerouteActive = false;
+        let suspectVehicle = null;
+
+        // هندسة الطرق الواقعية المبنية على المنحنيات (Bezier)
+        function getMainRoadPoint(t) {
+            const p0 = { x: 0, y: canvas.height * 0.35 };
+            const p1 = { x: canvas.width * 0.3, y: canvas.height * 0.22 };
+            const p2 = { x: canvas.width * 0.6, y: canvas.height * 0.58 };
+            const p3 = { x: canvas.width, y: canvas.height * 0.32 };
+            return getBezierPoint(t, p0, p1, p2, p3);
+        }
+
+        function getAltRoadPoint(t) {
+            const p0 = { x: 0, y: canvas.height * 0.72 };
+            const p1 = { x: canvas.width * 0.35, y: canvas.height * 0.82 };
+            const p2 = { x: canvas.width * 0.65, y: canvas.height * 0.52 };
+            const p3 = { x: canvas.width, y: canvas.height * 0.78 };
+            return getBezierPoint(t, p0, p1, p2, p3);
+        }
+
+        function getConnectorPoint(juncIndex, t) {
+            let startT = [0.22, 0.50, 0.78][juncIndex];
+            let endT = [0.22, 0.53, 0.76][juncIndex];
+            const pStart = getMainRoadPoint(startT);
+            const pEnd = getAltRoadPoint(endT);
+            const cp1 = { x: pStart.x + (juncIndex === 1 ? -40 : 40), y: pStart.y + (pEnd.y - pStart.y) * 0.5 };
+            return getBezierPoint(t, pStart, cp1, cp1, pEnd);
+        }
+
+        function getBezierPoint(t, p0, p1, p2, p3) {
+            const cx = 3 * (p1.x - p0.x); const bx = 3 * (p2.x - p1.x) - cx; const ax = p3.x - p0.x - cx - bx;
+            const cy = 3 * (p1.y - p0.y); const by = 3 * (p2.y - p1.y) - cy; const ay = p3.y - p0.y - cy - by;
+            const x = (ax * Math.pow(t, 3)) + (bx * Math.pow(t, 2)) + (cx * t) + p0.x;
+            const y = (ay * Math.pow(t, 3)) + (by * Math.pow(t, 2)) + (cy * t) + p0.y;
+            return { x, y };
+        }
+
+        function initCityElements() {
+            buildings = [];
+            for(let i=0; i<45; i++) {
+                let rx = Math.random() * canvas.width;
+                let ry = Math.random() * canvas.height;
+                let nearRoad = false;
+                for(let t=0; t<=1; t+=0.05) {
+                    let p1 = getMainRoadPoint(t); let p2 = getAltRoadPoint(t);
+                    if(Math.hypot(rx-p1.x, ry-p1.y) < 45 || Math.hypot(rx-p2.x, ry-p2.y) < 45) { nearRoad = true; break; }
+                }
+                if(!nearRoad) {
+                    buildings.push({
+                        x: rx, y: ry,
+                        w: 30 + Math.random()*35, h: 30 + Math.random()*35,
+                        type: Math.random() > 0.3 ? 'building' : 'park'
+                    });
+                }
+            }
+        }
+
+        function initTraffic() {
+            cars = [];
+            for (let i = 0; i < 40; i++) {
+                cars.push({
+                    t: Math.random(),
+                    road: Math.random() > 0.45 ? 'main' : 'alt',
+                    speed: Math.random() * 0.0012 + 0.0008,
+                    size: 8,
+                    color: Math.random() > 0.5 ? '#64748b' : '#475569',
+                    diverting: false,
+                    divProgress: 0,
+                    stopped: false,
+                    offset: (Math.random() * 8) - 4
+                });
+            }
+        }
+
+        function startSimulation() {
+            if (isRunning) return;
+            isRunning = true;
+            document.getElementById('start-btn').disabled = true;
+            currentStep = 0; simTime = 0; corridorActive = false; rerouteActive = false;
+            emergencyVehicles = []; suspectVehicle = null;
+            initTraffic();
+            
+            const timer = setInterval(() => {
+                simTime++;
+                if (simTime === 1) updateStep0();
+                if (simTime === 3) updateStep1();
+                if (simTime === 6) updateStep2();
+                if (simTime === 10) updateStep3();
+                if (simTime === 14) updateStep4();
+                if (simTime === 22) updateStep5();
+                if (simTime === 30) updateStep6();
+                if (simTime === 40) updateStep7();
+                if (simTime === 48) updateStep8();
+                if (simTime === 56) {
+                    updateStep9();
+                    clearInterval(timer);
+                    document.getElementById('start-btn').disabled = false;
+                    isRunning = false;
+                }
+            }, 1000);
+        }
+
+        function updateStep0() {
+            highlightTimeline(0);
+            document.getElementById('stat-traffic').innerText = "مستقر";
+            document.getElementById('stat-traffic').style.color = "var(--accent-green)";
+            document.getElementById('stat-speed').innerText = "54 كم/س";
+            document.getElementById('stat-ai').innerText = "مستقر";
+        }
+
+        function updateStep1() {
+            highlightTimeline(1);
+            const alert = document.getElementById('toast');
+            alert.style.display = 'block';
+            setTimeout(() => alert.style.display = 'none', 2500);
+
+            document.getElementById('panel-incident').classList.add('alert-active');
+            document.getElementById('incident-content').innerHTML = `
+                <div style="color:var(--accent-red); font-weight:800; margin-bottom:6px;">🚨 رصد حادث متعدد المركبات</div>
+                <div><b>الموقع:</b> طريق الملك فهد (المنعطف الرئيسي)</div>
+                <div><b>نسبة تأكيد الذكاء الاصطناعي:</b> 97%</div>
+            `;
+            
+            cars.forEach(car => {
+                if (car.road === 'main' && car.t > 0.53 && car.t < 0.65) {
+                    car.stopped = true;
+                    car.color = 'var(--accent-red)';
+                }
+            });
+        }
+
+        function updateStep2() {
+            highlightTimeline(2);
+            document.getElementById('stat-traffic').innerText = "مزدحم جداً";
+            document.getElementById('stat-traffic').style.color = "var(--accent-orange)";
+            document.getElementById('stat-speed').innerText = "22 كم/س";
+            
+            document.getElementById('panel-ai').innerHTML = `
+                <div class="panel-title">تحليلات الذكاء الاصطناعي التنبؤية</div>
+                <div class="spinner"></div>
+                <div style="text-align:center; font-size:12px; color:var(--accent-blue)">تحليل أبعاد الحادث الحركية ورصد الخسائر...</div>
+            `;
+
+            setTimeout(() => {
+                document.getElementById('panel-ai').innerHTML = `
+                    <div class="panel-title">تحليلات الذكاء الاصطناعي التنبؤية</div>
+                    <div class="stat-row"><span>خطورة الحادث:</span><span class="stat-val" style="color:var(--accent-red);">حرجة وعالية</span></div>
+                    <div class="stat-row"><span>الضحايا المحتملين:</span><span class="stat-val">3 أشخاص</span></div>
+                    <div class="stat-row"><span>التكدس المتوقع (خلال 5 دقائق):</span><span class="stat-val" style="color:var(--accent-red);">89%</span></div>
+                    <div class="stat-row"><span>إغلاق المسارات:</span><span class="stat-val">إغلاق مسارين بالكامل</span></div>
+                `;
+            }, 2000);
+        }
+
+        function updateStep3() {
+            highlightTimeline(3);
+            document.getElementById('panel-incident').innerHTML += `
+                <div style="margin-top:12px; border-top:1px solid rgba(255,255,255,0.1); padding-top:10px;">
+                    <div style="font-size:11px; font-weight:800; color:var(--accent-green); margin-bottom:6px;">✓ استجابة تلقائية وتوجيه فوري</div>
+                    <div style="font-size:12px; color:#e2e8f0;">🚑 إسعاف ذكي متطور [AMB-04]</div>
+                    <div style="font-size:12px; color:#e2e8f0;">🚓 دورية فرض النظام [LE-12]</div>
+                    <div style="font-size:12px; color:#e2e8f0;">🚒 آليات الدفاع المدني [CD-09]</div>
+                </div>
+            `;
+            emergencyVehicles.push({ t: 0, speed: 0.0038, type: 'Ambulance', color: '#06b6d4' });
+            emergencyVehicles.push({ t: -0.03, speed: 0.0038, type: 'Police', color: '#3b82f6', intercepting: false });
+            emergencyVehicles.push({ t: -0.06, speed: 0.0034, type: 'Fire', color: '#ef4444' });
+        }
+
+        function updateStep4() {
+            highlightTimeline(4);
+            corridorActive = true;
+            cars.forEach(car => {
+                if (car.road === 'main' && car.t < 0.5 && !car.stopped) {
+                    car.t += 0.07;
+                }
+            });
+        }
+
+        function updateStep5() {
+            highlightTimeline(5);
+            rerouteActive = true;
+            document.getElementById('panel-corridor').innerHTML = `
+                <div class="panel-title">منظومة الممرات الديناميكية</div>
+                <div style="color:var(--accent-green); font-weight:800; font-size:13px; margin-bottom:6px;">تفعيل إدارة التقاطعات التكيفية</div>
+                <div class="stat-row"><span>تقاطع أ (تدفق ممتد):</span><span class="stat-val" style="color:var(--accent-green);">تمديد الضوء الأخضر +18ث</span></div>
+                <div class="stat-row"><span>تقاطع ب (التحويل الذكي):</span><span class="stat-val" style="color:var(--accent-orange);">تحويل مسار التدفق بالكامل</span></div>
+            `;
+        }
+
+        function updateStep6() {
+            highlightTimeline(6);
+            document.getElementById('panel-corridor').innerHTML += `
+                <div style="margin-top:10px; border-top:1px solid rgba(255,255,255,0.1); padding-top:8px; background: rgba(245, 158, 11, 0.08); padding: 10px; border-radius: 8px;">
+                    <div style="color:var(--accent-orange); font-weight:800; font-size:11px;">📡 بث إنذار سيبراني موجه</div>
+                    <div style="font-size:12px; font-weight:700; margin:2px 0;">تجنب طريق الملك فهد - استخدم المخرج 12</div>
+                    <div style="font-size:11px; color:#94a3b8;">الوقت المستقطع الموفر: 4 دقائق</div>
+                </div>
+            `;
+        }
+
+        function updateStep7() {
+            highlightTimeline(7);
+            suspectVehicle = { t: 0.8, speed: -0.0015, color: '#c084fc', offset: 4 };
+            
+            document.getElementById('panel-security').innerHTML = `
+                <div class="panel-title">الأمن السيبراني وإنفاذ القانون</div>
+                <div style="color:var(--accent-red); font-weight:800; font-size:13px;">⚠️ رصد مركبة مخالفة (عكس السير)</div>
+                <div style="font-size:12px; margin:4px 0; color:#e2e8f0;">مركبة تسير عكس اتجاه الطوارئ في تقاطع ج</div>
+                <div class="stat-row"><span>ثقة الرصد الذكي:</span><span class="stat-val">94%</span></div>
+            `;
+
+            let police = emergencyVehicles.find(v => v.type === 'Police');
+            if(police) police.intercepting = true;
+        }
+
+        function updateStep8() {
+            highlightTimeline(8);
+            document.getElementById('panel-ai').innerHTML = `
+                <div class="panel-title">تحليلات الذكاء الاصطناعي التنبؤية</div>
+                <div style="color:var(--accent-green); font-weight:800; font-size:13px; margin-bottom:6px;">🏥 وصول الإسعاف لمركز الإصابات والمستشفى</div>
+                <div class="stat-row"><span>زمن الانتقال الفعلي:</span><span class="stat-val" style="color:var(--accent-green);">4 د و 12 ث</span></div>
+                <div class="stat-row"><span>المعدل الطبيعي بدون نظام محور:</span><span class="stat-val" style="text-decoration:line-through; color:var(--text-muted);">9 د و 45 ث</span></div>
+                <div class="stat-row" style="border-top:1px dashed #475569; padding-top:4px;"><span>الوقت الموفر:</span><span class="stat-val" style="color:var(--accent-green);">5 د و 33 ث</span></div>
+            `;
+        }
+
+        function updateStep9() {
+            highlightTimeline(9);
+            document.getElementById('panel-incident').classList.remove('alert-active');
+            document.getElementById('stat-traffic').innerText = "تم الحل بنجاح";
+            document.getElementById('stat-traffic').style.color = "var(--accent-green)";
+            
+            document.getElementById('panel-corridor').innerHTML = `
+                <div class="panel-title">ملخص اكتمال المهمة بنجاح</div>
+                <div style="font-size:12px; line-height:1.7; color:#cbd5e1;">
+                    <div><span style="color:var(--accent-green)">✓</span> تم اكتشاف الحادث وتصنيفه ذاتياً في <b>ثانيتين</b></div>
+                    <div><span style="color:var(--accent-green)">✓</span> كفاءة فتح الممرات الإلزامية الطارئة: <b>100%</b></div>
+                    <div><span style="color:var(--accent-green)">✓</span> خفض حدة الاختناقات المحيطة: <b>41%</b></div>
+                    <div><span style="color:var(--accent-green)">✓</span> منع وقوع حوادث ارتدادية ثانوية: <b>مؤكد</b></div>
+                </div>
+            `;
+            
+            emergencyVehicles = []; suspectVehicle = null; corridorActive = false; rerouteActive = false;
+            cars.forEach(car => { car.stopped = false; car.color = '#64748b'; });
+        }
+
+        function highlightTimeline(stepIndex) {
+            document.querySelectorAll('.timeline-step').forEach((el, idx) => {
+                el.classList.remove('active', 'completed');
+                if (idx < stepIndex) el.classList.add('completed');
+                if (idx === stepIndex) el.classList.add('active');
+            });
+        }
+
+        // --- محرك الرسم ومعالجة الفيزياء الجغرافية الحية ---
+        function renderLoop() {
+            ctx.fillStyle = '#101726';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // رسم البيئة الحضرية والحدائق
+            buildings.forEach(b => {
+                if(b.type === 'building') {
+                    ctx.fillStyle = '#1e293b';
+                    ctx.fillRect(b.x, b.y, b.w, b.h);
+                    ctx.strokeStyle = '#334155';
+                    ctx.lineWidth = 1;
+                    ctx.strokeRect(b.x, b.y, b.w, b.h);
+                } else {
+                    ctx.fillStyle = '#064e3b';
+                    ctx.beginPath();
+                    ctx.arc(b.x + b.w/2, b.y + b.h/2, b.w/2, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            });
+
+            ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+            
+            // الأسفلت الأساسي (طريق الملك فهد الرئيسي)
+            ctx.strokeStyle = '#1e2530'; ctx.lineWidth = 42;
+            ctx.beginPath();
+            for(let t=0; t<=1; t+=0.01) {
+                let p = getMainRoadPoint(t);
+                if(t===0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y);
+            }
+            ctx.stroke();
+
+            // الأسفلت الأساسي (الطريق البديل البايباس)
+            ctx.beginPath();
+            for(let t=0; t<=1; t+=0.01) {
+                let p = getAltRoadPoint(t);
+                if(t===0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y);
+            }
+            ctx.stroke();
+
+            // أسفلت التقاطعات الرابطة
+            for(let j=0; j<3; j++) {
+                ctx.beginPath();
+                for(let t=0; t<=1; t+=0.02) {
+                    let p = getConnectorPoint(j, t);
+                    if(t===0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y);
+                }
+                ctx.stroke();
+            }
+
+            // خطوط مسارات الحارات
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)'; ctx.lineWidth = 1.5; ctx.setLineDash([10, 15]);
+            ctx.beginPath();
+            for(let t=0; t<=1; t+=0.01) {
+                let p = getMainRoadPoint(t); if(t===0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y);
+            }
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // إضاءة الممر الأخضر الديناميكي
+            if (corridorActive && emergencyVehicles.length > 0) {
+                let leadT = emergencyVehicles[0].t;
+                if(leadT >= 0 && leadT < 0.6) {
+                    ctx.save();
+                    ctx.strokeStyle = 'rgba(16, 185, 129, 0.22)'; ctx.lineWidth = 48;
+                    ctx.shadowColor = 'var(--accent-green)'; ctx.shadowBlur = 15;
+                    ctx.beginPath();
+                    for(let t = Math.max(0, leadT - 0.08); t <= Math.min(0.62, leadT + 0.25); t += 0.01) {
+                        let p = getMainRoadPoint(t);
+                        if(t === Math.max(0, leadT - 0.08)) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y);
+                    }
+                    ctx.stroke(); ctx.restore();
+                }
+            }
+
+            // رسم إشارات المرور الذكية للتقاطعات
+            for(let j=0; j<3; j++) {
+                let node = getConnectorPoint(j, 0);
+                let isGreen = corridorActive || (rerouteActive && j === 1);
+                ctx.fillStyle = isGreen ? 'rgba(16, 185, 129, 0.3)' : 'rgba(244, 63, 94, 0.25)';
+                ctx.beginPath(); ctx.arc(node.x, node.y, 13, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = isGreen ? 'var(--accent-green)' : 'var(--accent-red)';
+                ctx.beginPath(); ctx.arc(node.x, node.y, 6, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = '#94a3b8'; ctx.font = 'bold 11px sans-serif';
+                ctx.fillText(`تقاطع ${String.fromCharCode(65 + j)}`, node.x - 20, node.y - 18);
+            }
+
+            // رسم وتحديث حركة السيارات المدنية
+            cars.forEach(car => {
+                if (!car.stopped) {
+                    if (rerouteActive && car.road === 'main' && !car.diverting && car.t > 0.46 && car.t < 0.50) {
+                        if(Math.random() > 0.25) car.diverting = true;
+                    }
+
+                    if (car.diverting) {
+                        car.divProgress += 0.007;
+                        let p = getConnectorPoint(1, car.divProgress);
+                        car.x = p.x; car.y = p.y;
+                        if(car.divProgress >= 1) { car.road = 'alt'; car.t = 0.53; car.diverting = false; }
+                    } else {
+                        car.t += car.speed;
+                        if (car.t > 1) { car.t = 0; car.stopped = false; car.color = '#64748b'; }
+                        let p = car.road === 'main' ? getMainRoadPoint(car.t) : getAltRoadPoint(car.t);
+                        car.x = p.x; car.y = p.y + car.offset;
+                    }
+                }
+                ctx.fillStyle = car.color;
+                ctx.fillRect(car.x - 4, car.y - 4, 10, 7);
+            });
+
+            // رسم منطقة الحادث الحية التبضية
+            if (simTime >= 3 && simTime < 56) {
+                let crashPos = getMainRoadPoint(0.58);
+                let radPulse = 18 + Math.sin(Date.now() / 120) * 7;
+                ctx.fillStyle = 'rgba(244, 63, 94, 0.25)';
+                ctx.beginPath(); ctx.arc(crashPos.x, crashPos.y, radPulse, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = 'var(--accent-red)';
+                ctx.beginPath(); ctx.arc(crashPos.x, crashPos.y, 6, 0, Math.PI * 2); ctx.fill();
+            }
+
+            // إدارة سيارات الإسعاف والطوارئ الذكية
+            emergencyVehicles.forEach(vehicle => {
+                if (vehicle.type === 'Police' && vehicle.intercepting && suspectVehicle) {
+                    vehicle.t += vehicle.speed * 0.7;
+                } else {
+                    if (vehicle.t < 0.52) vehicle.t += vehicle.speed;
+                }
+
+                if(vehicle.t >= 0) {
+                    let p = getMainRoadPoint(vehicle.t);
+                    ctx.fillStyle = (Math.floor(Date.now() / 100) % 2 === 0) ? vehicle.color : '#fff';
+                    ctx.shadowColor = vehicle.color; ctx.shadowBlur = 10;
+                    ctx.fillRect(p.x - 6, p.y - 5, 13, 10);
+                    ctx.shadowBlur = 0;
+                }
+            });
+
+            // المركبة المخالفة عكس السير
+            if (suspectVehicle && simTime >= 40) {
+                suspectVehicle.t += suspectVehicle.speed;
+                if(suspectVehicle.t < 0.56) suspectVehicle.speed = 0;
+                let p = getMainRoadPoint(suspectVehicle.t);
+                ctx.fillStyle = suspectVehicle.color;
+                ctx.fillRect(p.x - 5, p.y - 5 + suspectVehicle.offset, 11, 9);
+                ctx.strokeStyle = 'var(--accent-red)'; ctx.lineWidth = 1.5;
+                ctx.strokeRect(p.x - 9, p.y - 9 + suspectVehicle.offset, 19, 18);
+            }
+
+            requestAnimationFrame(renderLoop);
+        }
+
+        initCityElements();
+        initTraffic();
+        renderLoop();
+    </script>
+</body>
+</html>
